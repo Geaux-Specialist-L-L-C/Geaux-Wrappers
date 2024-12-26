@@ -1,0 +1,199 @@
+Summary
+This document details a comprehensive testing strategy for a React application using Jest and React Testing Library. The testing encompasses critical functionalities, including user authentication, content generation and management, analytics dashboard rendering, and overall UI/navigation. The approach involves writing unit and integration tests for various components, mocking API calls where necessary, and utilizing tools like fireEvent to simulate user interactions. Finally, instructions are provided to run the tests, either individually or in watch mode for continuous feedback.
+
+Testing (T): Adding Tests for Advanced Frontend Features
+To ensure the application is robust and reliable, we will implement tests for the following:
+
+User Authentication
+Content Generation
+Content Saving and Fetching
+Analytics Dashboard
+Overall UI and Navigation
+We’ll use Jest and React Testing Library for unit and integration tests.
+
+1. Environment Setup for Testing
+Install Dependencies
+bash
+Copy code
+npm install --save-dev jest @testing-library/react @testing-library/jest-dom @testing-library/user-event
+Add Test Script
+Update package.json:
+
+json
+Copy code
+"scripts": {
+  "test": "react-scripts test"
+}
+2. Writing Tests
+User Authentication
+We’ll test the Login component to verify form submission and API interaction.
+
+__tests__/Login.test.js
+javascript
+Copy code
+import { render, screen, fireEvent } from '@testing-library/react';
+import Login from '../pages/Login';
+import AuthContext from '../context/AuthContext';
+
+test('renders login form', () => {
+  render(
+    <AuthContext.Provider value={{ login: jest.fn() }}>
+      <Login />
+    </AuthContext.Provider>
+  );
+
+  const emailInput = screen.getByLabelText(/email/i);
+  const passwordInput = screen.getByLabelText(/password/i);
+  const loginButton = screen.getByRole('button', { name: /login/i });
+
+  expect(emailInput).toBeInTheDocument();
+  expect(passwordInput).toBeInTheDocument();
+  expect(loginButton).toBeInTheDocument();
+});
+
+test('submits form with valid inputs', async () => {
+  const mockLogin = jest.fn();
+  render(
+    <AuthContext.Provider value={{ login: mockLogin }}>
+      <Login />
+    </AuthContext.Provider>
+  );
+
+  const emailInput = screen.getByLabelText(/email/i);
+  const passwordInput = screen.getByLabelText(/password/i);
+  const loginButton = screen.getByRole('button', { name: /login/i });
+
+  fireEvent.change(emailInput, { target: { value: 'test@example.com' } });
+  fireEvent.change(passwordInput, { target: { value: 'password123' } });
+  fireEvent.click(loginButton);
+
+  expect(mockLogin).toHaveBeenCalled();
+});
+Content Generation
+We’ll test the ContentForm component for handling form inputs and calling the API.
+
+__tests__/ContentForm.test.js
+javascript
+Copy code
+import { render, screen, fireEvent } from '@testing-library/react';
+import ContentForm from '../components/ContentForm';
+
+test('renders content form', () => {
+  render(<ContentForm setGeneratedContent={jest.fn()} />);
+
+  const nicheInput = screen.getByLabelText(/niche/i);
+  const typeSelect = screen.getByLabelText(/type/i);
+  const keywordsInput = screen.getByLabelText(/keywords/i);
+  const generateButton = screen.getByRole('button', { name: /generate/i });
+
+  expect(nicheInput).toBeInTheDocument();
+  expect(typeSelect).toBeInTheDocument();
+  expect(keywordsInput).toBeInTheDocument();
+  expect(generateButton).toBeInTheDocument();
+});
+
+test('calls setGeneratedContent on valid form submission', () => {
+  const mockSetGeneratedContent = jest.fn();
+  render(<ContentForm setGeneratedContent={mockSetGeneratedContent} />);
+
+  const nicheInput = screen.getByLabelText(/niche/i);
+  const typeSelect = screen.getByLabelText(/type/i);
+  const keywordsInput = screen.getByLabelText(/keywords/i);
+  const generateButton = screen.getByRole('button', { name: /generate/i });
+
+  fireEvent.change(nicheInput, { target: { value: 'Technology' } });
+  fireEvent.change(typeSelect, { target: { value: 'blog' } });
+  fireEvent.change(keywordsInput, { target: { value: 'AI, GPT, automation' } });
+  fireEvent.click(generateButton);
+
+  expect(mockSetGeneratedContent).toHaveBeenCalled();
+});
+Content Saving and Fetching
+We’ll test the GeneratedContent component to ensure it fetches and displays saved content.
+
+__tests__/GeneratedContent.test.js
+javascript
+Copy code
+import { render, screen, waitFor } from '@testing-library/react';
+import GeneratedContent from '../pages/GeneratedContent';
+import { fetchContentHistory } from '../services/api';
+
+jest.mock('../services/api');
+
+test('fetches and displays content history', async () => {
+  const mockHistory = [
+    { id: 1, title: 'Blog 1', text: 'This is the first blog.' },
+    { id: 2, title: 'Blog 2', text: 'This is the second blog.' },
+  ];
+  fetchContentHistory.mockResolvedValue(mockHistory);
+
+  render(<GeneratedContent />);
+
+  await waitFor(() => {
+    const contentItems = screen.getAllByRole('listitem');
+    expect(contentItems).toHaveLength(mockHistory.length);
+    expect(screen.getByText(/Blog 1/i)).toBeInTheDocument();
+    expect(screen.getByText(/Blog 2/i)).toBeInTheDocument();
+  });
+});
+Analytics Dashboard
+We’ll test the Analytics component for rendering a chart with data.
+
+__tests__/Analytics.test.js
+javascript
+Copy code
+import { render, screen, waitFor } from '@testing-library/react';
+import Analytics from '../components/Analytics';
+import { fetchAnalytics } from '../services/api';
+
+jest.mock('../services/api');
+
+test('renders analytics chart', async () => {
+  const mockAnalytics = { keywords: ['AI', 'GPT'], counts: [10, 20] };
+  fetchAnalytics.mockResolvedValue(mockAnalytics);
+
+  render(<Analytics />);
+
+  await waitFor(() => {
+    expect(screen.getByText(/AI/i)).toBeInTheDocument();
+    expect(screen.getByText(/GPT/i)).toBeInTheDocument();
+  });
+});
+UI and Navigation
+We’ll test navigation between pages using React Router.
+
+__tests__/App.test.js
+javascript
+Copy code
+import { render, screen } from '@testing-library/react';
+import { BrowserRouter } from 'react-router-dom';
+import App from '../App';
+
+test('renders home page by default', () => {
+  render(
+    <BrowserRouter>
+      <App />
+    </BrowserRouter>
+  );
+  expect(screen.getByText(/automate your content creation/i)).toBeInTheDocument();
+});
+
+test('navigates to login page', () => {
+  render(
+    <BrowserRouter>
+      <App />
+    </BrowserRouter>
+  );
+  const loginLink = screen.getByText(/login/i);
+  loginLink.click();
+  expect(screen.getByText(/email/i)).toBeInTheDocument();
+});
+3. Running Tests
+Run all tests:
+bash
+Copy code
+npm test
+Watch mode for continuous testing:
+bash
+Copy code
+npm test -- --watch
