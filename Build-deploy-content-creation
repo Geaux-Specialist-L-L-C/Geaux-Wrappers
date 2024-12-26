@@ -1,0 +1,214 @@
+Backend-howto-content creation
+Source guide
+Summary
+This document details building and deploying a content creation application using Python's FastAPI framework, leveraging OpenAI's GPT models for automated content generation. The application's architecture includes an optional React frontend, a FastAPI backend handling API requests, and SQLite for data storage, all packaged with Docker for deployment. A comprehensive guide walks through setup, backend development (using specific files like main.py and openai_service.py), Dockerization using a Dockerfile and docker-compose.yml, GitHub integration for version control, and finally, automated deployment using GitHub Actions and Docker Hub. The ultimate goal is to create a readily deployable application capable of generating various content formats (blog posts, scripts, summaries) based on user input.
+
+How-to: Build and Deploy a Content Creation Automation App
+Below is a detailed guide to develop and deploy an app for automated blog writing, YouTube script generation, and podcast episode summaries. The solution will leverage GPT models for content generation, and we'll package it for deployment using Docker, hosted on GitHub and Docker Hub.
+
+1. Environment Setup
+Technologies Used
+Programming Language: Python (FastAPI for API development)
+Database: SQLite (for simplicity; can scale to PostgreSQL/MySQL)
+Deployment: Docker, GitHub Actions for CI/CD
+GPT Integration: OpenAI's API
+Frontend Framework: React (optional for a user-friendly UI)
+Prerequisites
+Install Docker and Docker Compose.
+Install Python 3.8+ and pip.
+Obtain an OpenAI API key.
+Set up GitHub and Docker Hub accounts.
+2. App Architecture
+Frontend: Optional React app for user interactions.
+Backend: FastAPI for handling API requests.
+Database: SQLite for storing user data and generated content.
+Environment Variables: Store sensitive keys and config in .env.
+3. Backend Development
+Setup Project
+bash
+Copy code
+mkdir content-automation
+cd content-automation
+python3 -m venv venv
+source venv/bin/activate
+pip install fastapi uvicorn pydantic python-dotenv openai
+File Structure
+css
+Copy code
+content-automation/
+├── app/
+│ ├── main.py
+│ ├── models.py
+│ ├── routers/
+│ │ ├── __init__.py
+│ │ └── content.py
+│ ├── services/
+│ │ └── openai_service.py
+│ ├── database.py
+│ └── schemas.py
+├── requirements.txt
+├── Dockerfile
+├── docker-compose.yml
+├── .env
+└── README.md
+Backend Code
+app/main.py
+python
+Copy code
+from fastapi import FastAPI
+from app.routers import content
+
+app = FastAPI()
+
+app.include_router(content.router)
+
+@app.get("/")
+def root():
+return {"message": "Content Automation API is running"}
+app/routers/content.py
+python
+Copy code
+from fastapi import APIRouter, HTTPException
+from pydantic import BaseModel
+from app.services.openai_service import generate_content
+
+router = APIRouter(prefix="/content", tags=["Content Generation"])
+
+class ContentRequest(BaseModel):
+niche: str
+type: str # e.g., "blog", "script", "summary"
+keywords: list[str]
+
+@router.post("/")
+async def generate_content_route(request: ContentRequest):
+content = generate_content(request.niche, request.type, request.keywords)
+if not content:
+raise HTTPException(status_code=400, detail="Content generation failed")
+return {"content": content}
+app/services/openai_service.py
+python
+Copy code
+import openai
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
+openai.api_key = os.getenv("OPENAI_API_KEY")
+
+def generate_content(niche: str, content_type: str, keywords: list[str]) -> str:
+prompt = f"Write a {content_type} about {niche} including the keywords: {', '.join(keywords)}."
+try:
+response = openai.Completion.create(
+engine="text-davinci-003",
+prompt=prompt,
+max_tokens=500
+)
+return response.choices[0].text.strip()
+except Exception as e:
+print(f"Error generating content: {e}")
+return ""
+.env
+env
+Copy code
+OPENAI_API_KEY=your_openai_api_key_here
+requirements.txt
+txt
+Copy code
+fastapi
+uvicorn
+pydantic
+openai
+python-dotenv
+4. Dockerize the Application
+Dockerfile
+Dockerfile
+Copy code
+FROM python:3.9-slim
+
+WORKDIR /app
+
+COPY requirements.txt requirements.txt
+RUN pip install -r requirements.txt
+
+COPY ./app /app
+
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+Docker Compose
+yaml
+Copy code
+version: "3.8"
+services:
+app:
+build: .
+ports:
+- "8000:8000"
+env_file:
+- .env
+Build and Run
+bash
+Copy code
+docker-compose up --build
+5. Push to GitHub and Docker Hub
+GitHub Repository
+Initialize Git:
+bash
+Copy code
+git init
+git remote add origin https://github.com/yourusername/content-automation.git
+git add .
+git commit -m "Initial commit"
+git branch -M main
+git push -u origin main
+Docker Hub
+Build and tag the Docker image:
+bash
+Copy code
+docker build -t yourdockerhubusername/content-automation:latest .
+Log in to Docker Hub:
+bash
+Copy code
+docker login
+Push the image:
+bash
+Copy code
+docker push yourdockerhubusername/content-automation:latest
+6. Deploy with GitHub Actions
+.github/workflows/docker-publish.yml
+yaml
+Copy code
+name: Publish Docker Image
+
+on:
+push:
+branches:
+- main
+
+jobs:
+build-and-push:
+runs-on: ubuntu-latest
+steps:
+- name: Checkout repository
+uses: actions/checkout@v3
+
+- name: Log in to Docker Hub
+uses: docker/login-action@v2
+with:
+username: ${{ secrets.DOCKER_USERNAME }}
+password: ${{ secrets.DOCKER_PASSWORD }}
+
+- name: Build and push Docker image
+uses: docker/build-push-action@v4
+with:
+context: .
+push: true
+tags: yourdockerhubusername/content-automation:latest
+Add DOCKER_USERNAME and DOCKER_PASSWORD as secrets in your GitHub repository settings.
+
+7. Test and Validate
+Access the API locally via http://localhost:8000/.
+Use tools like Postman to test the /content endpoint.
+Validate the deployment on Docker Hub by running:
+bash
+Copy code
+docker run -p 8000:8000 yourdockerhubusername/content-automation:latest
+NotebookLM can 
