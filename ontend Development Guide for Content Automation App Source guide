@@ -1,0 +1,264 @@
+Frontend Development Guide for Content Automation App
+Source guide
+SummarySource guide
+Summary
+This document outlines the development of a React-based frontend for a content automation application. The frontend allows users to input content generation preferences (niche, type, keywords), view and manage generated content, and includes user authentication and analytics. The guide details the setup using Create React App, Tailwind CSS for styling, Axios for API calls, and a component-based architecture with clear file structuring. Finally, it covers building a Docker image for deployment to Docker Hub via a GitHub repository, emphasizing a complete, deployable solution.
+
+
+
+
+
+
+
+
+
+Frontend Development Guide for Content Automation App
+We will develop a React-based frontend that allows users to:
+
+Input preferences for content generation (e.g., niche, content type, and keywords).
+View and manage generated content.
+Integrate features like user authentication and analytics.
+1. Environment Setup
+Prerequisites
+Node.js and npm installed.
+Basic understanding of React and API integration.
+Technologies Used
+Frontend Framework: React (CRA - Create React App)
+State Management: React Context API or Redux (optional)
+Styling: TailwindCSS (for quick and responsive design)
+API Client: Axios
+2. Project Setup
+Step 1: Create React App
+bash
+Copy code
+npx create-react-app content-automation-frontend
+cd content-automation-frontend
+Step 2: Install Dependencies
+bash
+Copy code
+npm install axios react-router-dom tailwindcss
+npx tailwindcss init
+Step 3: Configure TailwindCSS
+Add the following to the tailwind.config.js file:
+
+javascript
+Copy code
+/** @type {import('tailwindcss').Config} */
+module.exports = {
+content: ["./src/**/*.{js,jsx,ts,tsx}"],
+theme: {
+extend: {},
+},
+plugins: [],
+};
+Update index.css to include Tailwind:
+
+css
+Copy code
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+3. File Structure
+css
+Copy code
+src/
+├── components/
+│ ├── Header.jsx
+│ ├── Footer.jsx
+│ ├── ContentForm.jsx
+│ └── ContentDisplay.jsx
+├── pages/
+│ ├── Home.jsx
+│ └── GeneratedContent.jsx
+├── services/
+│ └── api.js
+├── App.js
+├── index.js
+└── styles/
+└── tailwind.css
+4. Code Implementation
+4.1 Reusable Components
+components/Header.jsx
+javascript
+Copy code
+import React from 'react';
+import { Link } from 'react-router-dom';
+
+const Header = () => (
+
+Content Automation
+
+Home
+Generated Content
+
+
+);
+
+export default Header;
+components/Footer.jsx
+javascript
+Copy code
+import React from 'react';
+
+const Footer = () => (
+
+© 2024 Content Automation
+
+
+);
+
+export default Footer;
+components/ContentForm.jsx
+javascript
+Copy code
+import React, { useState } from 'react';
+import { generateContent } from '../services/api';
+
+const ContentForm = ({ setGeneratedContent }) => {
+const [formData, setFormData] = useState({ niche: '', type: '', keywords: '' });
+
+const handleChange = (e) => {
+setFormData({ ...formData, [e.target.name]: e.target.value });
+};
+
+const handleSubmit = async (e) => {
+e.preventDefault();
+const keywordsArray = formData.keywords.split(',').map(k => k.trim());
+const response = await generateContent(formData.niche, formData.type, keywordsArray);
+setGeneratedContent(response.content);
+};
+
+return (
+
+
+Niche:
+
+
+
+Type:
+
+Select Type
+Blog
+Script
+Summary
+
+
+
+Keywords (comma-separated):
+
+
+Generate
+
+);
+};
+
+export default ContentForm;
+components/ContentDisplay.jsx
+javascript
+Copy code
+import React from 'react';
+
+const ContentDisplay = ({ content }) => (
+
+Generated Content
+
+{content || "Your content will appear here after generation."}
+
+
+);
+
+export default ContentDisplay;
+4.2 Pages
+pages/Home.jsx
+javascript
+Copy code
+import React, { useState } from 'react';
+import ContentForm from '../components/ContentForm';
+import ContentDisplay from '../components/ContentDisplay';
+
+const Home = () => {
+const [generatedContent, setGeneratedContent] = useState('');
+
+return (
+
+Automate Your Content Creation
+
+
+
+);
+};
+
+export default Home;
+pages/GeneratedContent.jsx
+javascript
+Copy code
+import React from 'react';
+
+const GeneratedContent = () => (
+
+Generated Content History
+
+Feature under development.
+
+
+);
+
+export default GeneratedContent;
+4.3 API Service
+services/api.js
+javascript
+Copy code
+import axios from 'axios';
+
+const API_URL = "http://localhost:8000";
+
+export const generateContent = async (niche, type, keywords) => {
+try {
+const response = await axios.post(`${API_URL}/content`, { niche, type, keywords });
+return response.data;
+} catch (error) {
+console.error("Error generating content:", error);
+return { content: "Error generating content. Please try again." };
+}
+};
+5. Running the App Locally
+Start the Development Server
+
+bash
+Copy code
+npm start
+Open http://localhost:3000 in your browser.
+
+6. Build and Dockerize Frontend
+Create Dockerfile
+Dockerfile
+Copy code
+FROM node:16-alpine AS build
+WORKDIR /app
+COPY package.json package-lock.json ./
+RUN npm install
+COPY . .
+RUN npm run build
+
+FROM nginx:alpine
+COPY --from=build /app/build /usr/share/nginx/html
+EXPOSE 80
+CMD ["nginx", "-g", "daemon off;"]
+Build and Run Docker Image
+bash
+Copy code
+docker build -t content-automation-frontend .
+docker run -p 80:80 content-automation-frontend
+7. Deploy Frontend
+GitHub Repository
+Push the frontend code to a separate GitHub repository.
+
+Docker Hub
+Tag the image:
+bash
+Copy code
+docker tag content-automation-frontend yourdockerhubusername/content-automation-frontend:latest
+Push to Docker Hub:
+bash
+Copy code
+docker push yourdockerhubusername/content-automation-frontend:latest
