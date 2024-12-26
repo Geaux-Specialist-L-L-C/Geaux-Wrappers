@@ -1,0 +1,243 @@
+This document details the frontend development of an application, focusing on advanced features. User authentication, implemented using JSON Web Tokens (JWT), is central, with login/signup functionality and secure content access. Content management allows users to save and retrieve their generated content, enhancing user experience. Finally, an analytics dashboard is described, providing insights into user activity through backend endpoints and frontend integration. The code snippets illustrate the implementation using React, Axios for API calls, and JWT for secure authentication, showcasing the application's architecture and workflow.
+
+Advanced Frontend: API/Functions/Actions/Tools
+In this phase, we focus on advanced features for the frontend to enhance functionality, including user authentication, content saving, advanced filtering, and analytics. These will make the application more interactive and provide a better user experience.
+
+1. Advanced Features Overview
+User Authentication:
+
+Integrate login/signup functionality.
+Allow content generation only for logged-in users.
+Content Management:
+
+Save generated content to user profiles.
+Implement a "Content History" feature.
+Search and Filtering:
+
+Enable users to search and filter their generated content.
+Analytics Dashboard:
+
+Provide insights into user activity (e.g., most used keywords, popular content types).
+2. User Authentication
+We will use JWT (JSON Web Tokens) for user authentication.
+
+Backend Updates
+Implement endpoints for user login/signup in the backend.
+Use JWT to generate and validate tokens.
+Example Backend Endpoints:
+
+POST /auth/signup
+POST /auth/login
+GET /auth/me
+Frontend Implementation
+Update Dependencies
+bash
+Copy code
+npm install jwt-decode react-router-dom
+Modify File Structure
+css
+Copy code
+src/
+├── components/
+│ ├── Header.jsx
+│ ├── Footer.jsx
+│ ├── LoginForm.jsx
+│ ├── SignupForm.jsx
+│ ├── ContentForm.jsx
+│ └── ContentDisplay.jsx
+├── context/
+│ └── AuthContext.js
+├── pages/
+│ ├── Home.jsx
+│ ├── Login.jsx
+│ ├── Signup.jsx
+│ └── GeneratedContent.jsx
+├── services/
+│ ├── api.js
+│ └── auth.js
+└── App.js
+Authentication Context
+context/AuthContext.js
+
+javascript
+Copy code
+import React, { createContext, useState } from 'react';
+import jwtDecode from 'jwt-decode';
+
+const AuthContext = createContext();
+
+export const AuthProvider = ({ children }) => {
+const [user, setUser] = useState(() => {
+const token = localStorage.getItem('token');
+return token ? jwtDecode(token) : null;
+});
+
+const login = (token) => {
+localStorage.setItem('token', token);
+setUser(jwtDecode(token));
+};
+
+const logout = () => {
+localStorage.removeItem('token');
+setUser(null);
+};
+
+return (
+
+{children}
+
+);
+};
+
+export default AuthContext;
+Header Updates
+Add login/logout links and dynamic rendering based on authentication status: components/Header.jsx
+
+javascript
+Copy code
+import React, { useContext } from 'react';
+import { Link } from 'react-router-dom';
+import AuthContext from '../context/AuthContext';
+
+const Header = () => {
+const { user, logout } = useContext(AuthContext);
+
+return (
+
+Content Automation
+
+Home
+{user ? (
+<>
+My Content
+Logout
+
+) : (
+<>
+Login
+Signup
+
+)}
+
+
+);
+};
+
+export default Header;
+Login and Signup Pages
+pages/Login.jsx
+
+javascript
+Copy code
+import React, { useState, useContext } from 'react';
+import { useNavigate } from 'react-router-dom';
+import AuthContext from '../context/AuthContext';
+import { loginUser } from '../services/auth';
+
+const Login = () => {
+const [formData, setFormData] = useState({ email: '', password: '' });
+const { login } = useContext(AuthContext);
+const navigate = useNavigate();
+
+const handleChange = (e) => {
+setFormData({ ...formData, [e.target.name]: e.target.value });
+};
+
+const handleSubmit = async (e) => {
+e.preventDefault();
+const token = await loginUser(formData);
+if (token) {
+login(token);
+navigate('/');
+} else {
+alert('Invalid credentials');
+}
+};
+
+return (
+
+
+Email:
+
+
+
+Password:
+
+
+Login
+
+);
+};
+
+export default Login;
+services/auth.js
+
+javascript
+Copy code
+import axios from 'axios';
+
+const API_URL = "http://localhost:8000";
+
+export const loginUser = async (credentials) => {
+try {
+const response = await axios.post(`${API_URL}/auth/login`, credentials);
+return response.data.token;
+} catch (error) {
+console.error("Error logging in:", error);
+return null;
+}
+};
+3. Content Management
+Save Generated Content
+Add a "Save" button in ContentDisplay.jsx:
+javascript
+Copy code
+Save
+Implement saveContent in services/api.js:
+javascript
+Copy code
+export const saveContent = async (content, token) => {
+try {
+const response = await axios.post(`${API_URL}/content/save`, { content }, {
+headers: { Authorization: `Bearer ${token}` }
+});
+return response.data;
+} catch (error) {
+console.error("Error saving content:", error);
+}
+};
+Fetch Content History
+Create a new API function in services/api.js:
+javascript
+Copy code
+export const fetchContentHistory = async (token) => {
+try {
+const response = await axios.get(`${API_URL}/content/history`, {
+headers: { Authorization: `Bearer ${token}` }
+});
+return response.data;
+} catch (error) {
+console.error("Error fetching history:", error);
+}
+};
+Update GeneratedContent.jsx to display the saved content.
+4. Analytics Dashboard
+API Endpoint
+Create a backend endpoint to aggregate analytics data (e.g., top keywords, content types).
+
+Frontend Integration
+Fetch analytics data:
+javascript
+Copy code
+export const fetchAnalytics = async (token) => {
+try {
+const response = await axios.get(`${API_URL}/analytics`, {
+headers: { Authorization: `Bearer ${token}` }
+});
+return response.data;
+} catch (error) {
+console.error("Error fetching analytics:", error);
+}
+};
+Display the data in a dashboard component.
+NotebookLM can be inaccurate, pleas
